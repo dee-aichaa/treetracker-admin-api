@@ -24,6 +24,7 @@ export class Organization extends Entity {
     postgresql: {
       columnName: 'name',
       dataType: 'character varying',
+      dataLength: 150,
     },
   })
   name: String;
@@ -33,6 +34,7 @@ export class Organization extends Entity {
     postgresql: {
       columnName: 'type',
       dataType: 'character varying',
+      dataLength: 150,
     },
   })
   type: String;
@@ -41,7 +43,8 @@ export class Organization extends Entity {
     type: String,
     postgresql: {
       dataType: 'uuid',
-      dbDefault: 'uuid_generate_v4()',
+      // dbDefault: 'uuid_generate_v4()',
+      // dbDefault: 'gen_random_uuid()',
     },
   })
   stakeholder_uuid: String;

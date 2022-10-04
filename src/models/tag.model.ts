@@ -31,7 +31,7 @@ export class Tag extends Entity {
     postgresql: {
       columnName: 'tag_name',
       dataType: 'character varying',
-      dataLength: null,
+      dataLength: 150,
       dataPrecision: null,
       dataScale: null,
       nullable: 'NO',

@@ -489,11 +489,12 @@ const isAuth = async (req, res, next) => {
     const userSession = decodedToken;
     req.user = userSession;
 
-    // console.log('userSession', userSession);
+    // console.log('userSession', userSession.policy);
     console.log('url', url);
 
     // VALIDATE USER DATA
-    expect(userSession.policy).toBeInstanceOf(Object);
+    // const policy = userSession.policy;
+    // expect(policy).toBeInstanceOf(Object);
     const policies = userSession.policy.policies;
     expect(policies).toBeInstanceOf(Array);
     const organization = userSession.policy.organization;

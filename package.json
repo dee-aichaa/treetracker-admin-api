@@ -8,6 +8,7 @@
     "loopback"
   ],
   "main": "dist/index.js",
+  "typings": "dist/index",
   "scripts": {
     "build": "lb-tsc --allowJs -d false",
     "build:watch": "lb-tsc --watch",
@@ -20,7 +21,7 @@
     "eslint": "eslint --report-unused-disable-directives .",
     "eslint:fix": "npm run eslint -- --fix",
     "posttest": "echo 'Finished running all tests.'",
-    "migrate": "node ./dist/migrate",
+    "migrate": "DEBUG=loopback:*,express:* node ./dist/migrate",
     "prestart": "npm run clean && npm run build",
     "start": "NODE_ENV=development node .",
     "start:debug": "NODE_ENV=development DEBUG=loopback:*,express:* node --inspect .",
@@ -78,7 +79,7 @@
     "@babel/preset-typescript": "^7.10.4",
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
-    "@loopback/build": "^7.0.1",
+    "@loopback/build": "7.0.2",
     "@loopback/eslint-config": "^11.0.1",
     "@loopback/testlab": "^3.4.3",
     "@types/jest": "^26.0.7",
