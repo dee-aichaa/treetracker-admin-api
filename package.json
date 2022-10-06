@@ -30,7 +30,7 @@
     "test": "NODE_ENV=test jest --watchAll --runInBand",
     "test:ci": "NODE_ENV=test jest --ci",
     "test:debug": "NODE_ENV=test DEBUG=loopback:*,express:* jest --no-cache --watchAll --runInBand",
-    "watch": "onchange 'src/controllers/**/*.ts' 'src/models/**/*.ts' 'src/repositories/**/*.ts' -- npm run build"
+    "watch": "onchange 'src/**/*.js' 'src/controllers/**/*.ts' 'src/models/**/*.ts' 'src/repositories/**/*.ts' -- npm run clean && npm run build"
   },
   "repository": {
     "type": "git",

@@ -11,16 +11,11 @@ import { Entity, model, property } from '@loopback/repository';
 export class AdminUser extends Entity {
   @property({
     type: Number,
-    required: true,
-    scale: 0,
+    generated: true,
     id: 1,
     postgresql: {
       columnName: 'id',
       dataType: 'integer',
-      dataLength: null,
-      dataPrecision: null,
-      dataScale: 0,
-      nullable: 'NO',
     },
   })
   id: Number;
@@ -38,14 +33,14 @@ export class AdminUser extends Entity {
       nullable: 'NO',
     },
   })
-  username: String;
+  userName: String;
 
   @property({
     type: String,
     required: true,
     length: 30,
     postgresql: {
-      columnName: 'password_hash',
+      columnName: 'first_name',
       dataType: 'character varying',
       dataLength: 150,
       dataPrecision: null,
@@ -53,7 +48,52 @@ export class AdminUser extends Entity {
       nullable: 'NO',
     },
   })
-  hasswordHash: String;
+  firstName: String;
+
+  @property({
+    type: String,
+    required: true,
+    length: 30,
+    postgresql: {
+      columnName: 'last_name',
+      dataType: 'character varying',
+      dataLength: 150,
+      dataPrecision: null,
+      dataScale: null,
+      nullable: 'NO',
+    },
+  })
+  lastName: String;
+
+  @property({
+    type: String,
+    length: 30,
+    required: false,
+    postgresql: {
+      columnName: 'password_hash',
+      dataType: 'character varying',
+      dataLength: 150,
+      dataPrecision: null,
+      dataScale: null,
+      nullable: 'YES',
+    },
+  })
+  passwordHash: String;
+
+  @property({
+    type: String,
+    length: 30,
+    required: false,
+    postgresql: {
+      columnName: 'salt',
+      dataType: 'character varying',
+      dataLength: 150,
+      dataPrecision: null,
+      dataScale: null,
+      nullable: 'YES',
+    },
+  })
+  salt: String;
 
   @property({
     type: String,
@@ -85,6 +125,7 @@ export class AdminUser extends Entity {
     postgresql: {
       columnName: 'enabled',
       dataType: 'boolean',
+      nullable: 'YES',
     },
   })
   enabled?: Boolean;

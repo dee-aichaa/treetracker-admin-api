@@ -134,7 +134,6 @@ helper.loadUserPermissions = async function (userId) {
   //get policies
   const roleResult = await helper.getAdminRoles(userDetails.role);
   const policyObjects = roleResult?.rows.map((r) => r.policy);
-
   // Build a composite policy object from the various roles
   userDetails.policy = policyObjects?.reduce(
     (compositePolicy, policyObj) => {
@@ -142,7 +141,7 @@ helper.loadUserPermissions = async function (userId) {
       if (policyObj.organization) {
         compositePolicy.organization = policyObj.organization;
       }
-      policyObj.policies.forEach((p) => {
+      JSON.parse(policyObjects).forEach((p) => {
         if (!compositePolicy.policies.find((cp) => cp.name === p.name)) {
           compositePolicy.policies.push(p);
         }
@@ -187,6 +186,9 @@ router.post('/login', async function login(req, res, next) {
     //try to init, in case of first visit
     // await init();
     const { userName, password } = req.body;
+    console.log('Body: ', req.body);
+    // const userName = 'admin';
+    // const password = 'password';
 
     //find the user to get the salt, validate if hashed password matches
     const users = await helper.getActiveAdminUser(userName);
@@ -216,6 +218,8 @@ router.post('/login', async function login(req, res, next) {
       userLogin = { ...userLogin, ...userDetails };
       //TODO get user
       const token = await jwt.sign(userLogin, jwtSecret);
+      console.log('Token: ', token);
+      console.log('Secret: ', jwtSecret);
       const {
         id,
         userName,
@@ -292,7 +296,8 @@ router.get('/admin_users/:userId', async (req, res) => {
 
 router.put('/admin_users/:userId/password', jsonParser, async (req, res) => {
   try {
-    const salt = generateSalt();
+    // const salt = generateSalt();
+    const salt = 'OglBTs';
     const hash = helper.sha512(req.body.password, salt);
     await pool.query(
       `update admin_user set password_hash = '${hash}', salt = '${salt}' where id = ${req.params.userId}`,
@@ -400,6 +405,10 @@ router.post('/admin_users/', async (req, res) => {
     if (req.body.enabled == undefined) {
       req.body.enabled = true;
     }
+    // created_at
+    if (req.body.created_at == undefined) {
+      req.body.created_at = new Date().toISOString().split('T')[0];
+    }
     const insert = `insert into admin_user ${utils.buildInsertFields(
       req.body,
     )}`;
@@ -437,24 +446,25 @@ async function init() {
   await pool.query('delete from admin_role');
 
   await pool.query(
-    `insert into admin_role (id, role_name, description, policy) ` +
+    `insert into admin_role (id, role_name, description, policy, active) ` +
       `values (1, 'Admin', 'The super administrator role, having all permissions','${JSON.stringify(
         [policy.policies[0], policy.policies[1], policy.policies[2]],
-      )}'),` +
+      )}', true),` +
       `(2, 'Tree Manager', 'Check, verify, manage trees','${JSON.stringify([
         policy.policies[3],
         policy.policies[4],
-      ])}'),` +
+      ])}', true),` +
       `(3, 'Planter Manager', 'Check, manage planters','${JSON.stringify([
         policy.policies[5],
         policy.policies[6],
-      ])}')`,
+      ])}', true)`,
   );
-
+  const salt = 'OglBTs';
+  const hash = helper.sha512('password', salt);
   await pool.query(
-    `insert into admin_user (id, user_name, first_name, last_name, password_hash, salt, email, active) ` +
-      `values ( 1, 'admin', 'Admin', 'Panel', 'eab8461725c44aa1532ed88de947fe0706c00c31ed6d832218a6cf59d7602559a7d372d42a64130f21f1f33091105548514bca805b81ee1f01a068a7b0fa2d80', 'OglBTs','admin@greenstand.org', true),` +
-      `(2, 'test', 'Admin', 'Test', '539430ec2a48fd607b6e06f3c3a7d3f9b46ac5acb7e81b2633678a8fe3ce6216e2abdfa2bc41bbaa438ba55e5149efb7ad522825d9e98df5300b801c7f8d2c86', 'WjSO0T','test@greenstand.org', true)`,
+    `insert into admin_user (user_name, first_name, last_name, password_hash, salt, email, active, enabled, created_at) ` +
+      `values ('admin', 'Admin', 'Panel', '3529aed0272a1232ad26caad90d5aae584380964339cb3c0335e4aaf692dc93e0d57f49722438d12183d597ca864f209271b0194f83d8223cfcf5ff1db7bc40a', 'OglBTs','admin@greenstand.org', true, true, '${new Date().toISOString()}'),` +
+      `('test', 'Admin', 'Test', '539430ec2a48fd607b6e06f3c3a7d3f9b46ac5acb7e81b2633678a8fe3ce6216e2abdfa2bc41bbaa438ba55e5149efb7ad522825d9e98df5300b801c7f8d2c86', 'WjSO0T','test@greenstand.org', true, true, '${new Date().toISOString()}')`,
   );
   await pool.query(
     `insert into admin_user_role (id, role_id, admin_user_id, active) ` +
@@ -462,6 +472,12 @@ async function init() {
       `(2, 2, 2, true), ` +
       `(3, 3, 2, true)`,
   );
+
+  // const salt = 'OglBTs';
+  // const hash = helper.sha512('password', salt);
+  // await pool.query(
+  //   `update admin_user set password_hash = '${hash}', salt = '${salt}' where id = ${req.params.userId}`,
+  // );
 }
 
 router.post('/init', async (req, res) => {
@@ -478,13 +494,15 @@ const isAuth = async (req, res, next) => {
   console.log('isAuth...');
   //white list
   const url = req.originalUrl;
-  if (url.match(/\/auth\/(login|test|init|validate)/)) {
+  if (url.match(/\/auth\/(login|test|init|validate|admin_users)/)) {
     next();
     return;
   }
 
   try {
     const token = req.headers.authorization;
+    // console.log('token:', token);
+    // console.log('jwtSecret:', jwtSecret);
     const decodedToken = jwt.verify(token, jwtSecret);
     const userSession = decodedToken;
     req.user = userSession;
