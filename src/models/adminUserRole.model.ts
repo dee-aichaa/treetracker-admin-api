@@ -6,21 +6,34 @@ import { Entity, model, property } from '@loopback/repository';
   settings: {
     idInjection: false,
     postgresql: { schema: 'public', table: 'admin_user_role' },
+    foreignKeys: {
+      fk_order_roleId: {
+        name: 'fk_adminUserRole_roleId',
+        entity: 'AdminRole',
+        entityKey: 'id',
+        foreignKey: 'role_id',
+        onDelete: 'CASCADE',
+        onUpdate: 'SET NULL',
+      },
+      fk_order_adminUserId: {
+        name: 'fk_adminUserRole_adminUserId',
+        entity: 'AdminUser',
+        entityKey: 'id',
+        foreignKey: 'admin_user_id',
+        onDelete: 'CASCADE',
+        onUpdate: 'SET NULL',
+      },
+    },
   },
 })
 export class AdminUserRole extends Entity {
   @property({
     type: Number,
-    required: true,
-    scale: 0,
+    generated: true,
     id: 1,
     postgresql: {
       columnName: 'id',
       dataType: 'integer',
-      dataLength: null,
-      dataPrecision: null,
-      dataScale: 0,
-      nullable: 'NO',
     },
   })
   id: Number;

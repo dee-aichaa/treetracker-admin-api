@@ -13,6 +13,23 @@ import getDatasource from '../datasources/config';
 import policy from '../policy.json';
 import expect from 'expect';
 
+const multer = require('multer');
+const upload = multer({ dest: 'tmp/csv/' });
+
+const {
+  earningsGet,
+  earningsPatch,
+  earningsBatchGet,
+  earningsBatchPatch,
+} = require('./earnings/handlers/earningsHandler');
+const {
+  adminMiddleware,
+  getFilterAndLimitOptions,
+  generatePrevAndNext,
+} = require('./earnings/utils/helper');
+const { handlerWrapper } = require('./earnings/utils/utils');
+const EarningsService = require('./earnings/services/EarningsService');
+const StakeholderService = require('./stakeholders/services/StakeholderService');
 const app = express();
 const pool = new Pool({ connectionString: getDatasource().url });
 const jwtSecret = config.jwtSecret;
@@ -92,8 +109,8 @@ helper.addAdminUserRole = async function (userId, roleId) {
   return await pool.query(
     `insert into admin_user_role (role_id, admin_user_id, active)
      values (${roleId},${userId},true)
-     on conflict (role_id, admin_user_id)
-     do update set active = true`,
+     on conflict on constraint admin_user_role_pkey
+     do nothing`,
   );
 };
 
@@ -296,8 +313,8 @@ router.get('/admin_users/:userId', async (req, res) => {
 
 router.put('/admin_users/:userId/password', jsonParser, async (req, res) => {
   try {
-    // const salt = generateSalt();
-    const salt = 'OglBTs';
+    const salt = generateSalt();
+    // const salt = 'OglBTs';
     const hash = helper.sha512(req.body.password, salt);
     await pool.query(
       `update admin_user set password_hash = '${hash}', salt = '${salt}' where id = ${req.params.userId}`,
@@ -431,6 +448,96 @@ router.post('/admin_users/', async (req, res) => {
     res.status(500).json();
   }
 });
+
+// Earnings Api Routes
+router.get('/earnings', async (req, res) => {
+  //
+  try {
+    // const result = await pool.query(
+    //   `select * from earnings where active = true`,
+    // );
+    // res.status(200).json(result.rows);
+    // await earningsGet(req, res);
+    const { filter, limitOptions } = getFilterAndLimitOptions(req.query);
+
+    const earningsService = new EarningsService();
+
+    const { earnings, count } = await earningsService.getEarnings(
+      filter,
+      limitOptions,
+    );
+    // console.log('earnings', earnings);
+    const url = `earnings`;
+    const links = generatePrevAndNext({
+      url,
+      count,
+      limitOptions,
+      queryObject: { ...filter, ...limitOptions },
+    });
+
+    res.send({
+      earnings,
+      links,
+      query: { count, ...limitOptions, ...filter },
+    });
+
+    res.end();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json();
+  }
+});
+
+router.patch('/earnings', handlerWrapper(earningsPatch));
+
+router.get('/earnings/batch', handlerWrapper(earningsBatchGet));
+
+router.patch(
+  '/earnings/batch',
+  upload.single('csv'),
+  adminMiddleware,
+  handlerWrapper(earningsBatchPatch),
+);
+
+router.get('/stakeholders/:id', async (req, res) => {
+  console.log(`I'm in stakeholders/:id`);
+  try {
+    const { id } = req.params;
+
+    const { filter, limitOptions } = getFilterAndLimitOptions(req.query);
+    const stakeholderService = new StakeholderService();
+
+    const { stakeholders, totalCount } =
+      await stakeholderService.getAllStakeholdersById(id, filter, limitOptions);
+
+    const url = `stakeholders/${id}`;
+
+    const links = generatePrevAndNext({
+      url,
+      count: totalCount,
+      limitOptions,
+      queryObject: { ...filter, ...limitOptions },
+    });
+
+    res.send({
+      stakeholders,
+      links,
+      totalCount,
+      query: { ...limitOptions, ...filter },
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json();
+  }
+});
+// .get(handlerWrapper(stakeholderGetAllById));
+
+// router
+//   .route('/stakeholders')
+//   .get(handlerWrapper(stakeholderGetAll))
+//   .post(handlerWrapper(stakeholderCreate))
+//   .patch(handlerWrapper(stakeholderUpdate))
+//   .delete(handlerWrapper(stakeholderDelete));
 
 async function init() {
   console.log('Begin init...');
